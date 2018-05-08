@@ -55,13 +55,18 @@ export default {
       .catch(error => {
         // console.log(error)
       })
+
+    // 初始化搜索记录
+    this.initData()
   },
   computed: {},
   methods: {
-    initData(){
+    initData() {
       // 获取搜索历史记录
-      if(getStore('placeHistory')){
-        this.placelist = 
+      if (getStore('placeHistory')) {
+        this.placelist = JSON.parse(getStore('placeHistory'))
+      }else{
+        this.placelist = []
       }
     },
     // 发送搜索信息
@@ -86,10 +91,31 @@ export default {
      * 如果没有则新增，如果有则不做重复储存，判断完成后进入下一页
      */
     nextpage(index, geohash) {
+      let history = getStore('placeHistory');
+      let choosePlace = this.placelist[index];
+      if (history) {
+        let checkrepeat = false;
+        this.placeHistory = JSON.parse(history);
+        this.placeHistory.forEach(item => {
+          if (item.geohash == geohash) {
+            checkrepeat = true;
+          }
+        })
+        if (!checkrepeat) {
+          this.placeHistory.push(choosePlace)
+        }
+      } else {
+        this.placeHistory.push(choosePlace)
+      }
 
+      setStore('placeHistory', this.placeHistory)
+      this.$router.push({ path: '/msite', query: { geohash } })
     },
     // 清空历史记录
-    clearAll() {}
+    clearAll() {
+      removeStore('placeHistory')
+      this.initData()
+    }
   },
   components: { headTop }
 }

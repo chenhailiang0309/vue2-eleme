@@ -32,7 +32,7 @@
         <li v-for="(value,key,index) in sortgroupcity" :key="key" class="letter_classify_li">
           <h4 class="city_title">
             {{key}}
-            <span v-if="index==0">按字母顺序</span>
+            <span v-if="index==0">（按字母排序）</span>
           </h4>
           <ul class="groupcity_name_container citylistul clear">
             <router-link tag="li" v-for="item in value" :to="'/city'+item.id" :key="item.id" class="ellipsis">{{item.name}}</router-link>
@@ -45,6 +45,8 @@
 <script>
 import headTop from '../../components/header/head'
 
+import req from '@/config/axios'
+
 export default {
   data() {
     return {
@@ -55,6 +57,8 @@ export default {
     }
   },
   created() {
+    // this.getData()
+
     //获取当前城市
     this.$http({
         url: 'http://cangdu.org:8001/v1/cities?type=guess',
@@ -86,7 +90,6 @@ export default {
         method: 'get'
       })
       .then(res => {
-        console.log(res.data)
         this.groupcity = res.data;
       })
       .catch(error => {
@@ -106,6 +109,12 @@ export default {
     }
   },
   methods: {
+    /*async getData(){
+      const params = {}
+      const res = await req.get('/v1/cities?type=guess',params)
+      console.log(res)
+    },*/
+    
     //点击图标刷新页面
     reload() {
       window.location.reload();
