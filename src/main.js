@@ -21,8 +21,17 @@ if ('addEventListener' in document) {
   }, false);
 }
 
-
 Vue.config.productionTip = false
+
+/*router.beforeEach((to, from, next) => {
+  store.state.isLoading = false;
+  next()
+})
+
+router.afterEach((to, from) => {
+  store.state.isLoading = true
+})
+*/
 
 /* eslint-disable no-new */
 new Vue({
