@@ -3,6 +3,7 @@ import Router from 'vue-router'
 const home = r => require.ensure([], () => r(require('../page/home/home')), 'home')
 const city = r => require.ensure([], () => r(require('../page/city/city')), 'city')
 const msite = r => require.ensure([], () => r(require('../page/msite/msite')), 'msite')
+const shop = r => require.ensure([], () => r(require('../page/shop/shop')), 'shop')
 
 Vue.use(Router)
 
@@ -12,7 +13,8 @@ export default new Router({
     { path: '/', redirect: '/home' },
     { path: '/home', name: 'home', component: home },
     { path: '/city/:cityid', name: 'city', component: city },
-    { path: '/msite/', name: 'msite', component: msite }
+    { path: '/msite', name: 'msite', component: msite },
+    { path: '/shop', name: 'shop', component: shop }
   ],
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
