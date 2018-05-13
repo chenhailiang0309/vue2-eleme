@@ -9,6 +9,7 @@
       </nav>
       <!-- 顶部商户信息 -->
       <header class="shop_detail_header">
+        <img :src="imgBaseUrl+shopDetailData.image_path" class="header_cover_img">
       </header>
     </section>
     <loading v-show="showLoading"></loading>
@@ -21,6 +22,7 @@ import loading from '@/components/common/loading'
 export default {
   data() {
     return {
+      imgBaseUrl: '//elm.cangdu.org/img/', //图片所在域名地址
       geohash: '', //geohash位置信息
       shopId: null, //商店id值
       shopDetailData: null, //商铺详情
@@ -77,12 +79,13 @@ export default {
     },
     // 3、获取商铺食品列表
     getMenuList() {
+      // console.log(this.shopId)
       return this.$http({
-        url: 'http://cangdu.org:8001/shopping/v2/menu',
-        method: 'get',
-        data: {
-          'restaurant_id': this.shopId
-        }
+        url: 'http://cangdu.org:8001/shopping/v2/menu?restaurant_id=' + this.shopId,
+        method: 'get'
+        // data: {
+        //   'restaurant_id': this.shopId
+        // }
       })
     },
     //隐藏加载动画
