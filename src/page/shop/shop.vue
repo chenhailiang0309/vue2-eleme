@@ -56,9 +56,10 @@ export default {
           }
           // 2、获取商铺信息
           this.shopDetailData = res2.data;
+          console.log(this.shopDetailData)
 
           // 3、获取商铺食品列表
-          console.log(res3.data)
+          // console.log(res3.data)
           // 隐藏加载动画
           this.hideLoading();
         }))
