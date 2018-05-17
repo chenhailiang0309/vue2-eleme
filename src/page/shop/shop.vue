@@ -8,9 +8,99 @@
         </svg>
       </nav>
       <!-- 顶部商户信息 -->
-      <header class="shop_detail_header">
+      <header class="shop_detail_header" :style="{zIndex: showActivities? '14':'10'}">
         <img :src="imgBaseUrl+shopDetailData.image_path" class="header_cover_img">
+        <section class="description_header">
+          <router-link to="/shop/shopDetail" class="description_top">
+            <section class="description_left">
+              <img :src="imgBaseUrl + shopDetailData.image_path">
+            </section>
+            <section class="description_right">
+              <h4 class="description_title ellipsis">{{shopDetailData.name}}</h4>
+              <p class="description_text">商家配送／{{shopDetailData.order_lead_time}}分钟送达／配送费¥{{shopDetailData.float_delivery_fee}}</p>
+              <p class="description_promotion ellipsis">公告：{{promotionInfo}}</p>
+            </section>
+            <svg width="14" height="14" xmlns="http://www.w3.org/2000/svg" version="1.1" class="description_arrow">
+              <path d="M0 0 L8 7 L0 14" stroke="#fff" stroke-width="1" fill="none" />
+            </svg>
+          </router-link>
+        </section>
       </header>
+      <!-- tab 商品 评价 -->
+      <section class="change_show_type">
+        <div>
+          <span :class='{activity_show: changeShowType =="food"}' @click="changeShowType='food'">商品</span>
+        </div>
+        <div>
+          <span :class='{activity_show: changeShowType =="rating"}' @click="changeShowType='rating'">评价</span>
+        </div>
+      </section>
+      <!-- 食品部分-->
+      <section v-show="changeShowType =='food'" class="food_container">
+        <!-- 菜单列表 -->
+        <section class="menu_container">
+          <section class="menu_left">
+            <ul>
+              <li v-for="(item,index) in menuList" :key="index" class="menu_left_li">
+                <img :src="getImgPath(item.icon_url)" v-if="item.icon_url">
+                <span>{{item.name}}</span>
+                <span class="category_num">1</span>
+              </li>
+            </ul>
+          </section>
+          <section class="menu_right">
+            <ul>
+              <!-- 对应菜单左侧每个分类 -->
+              <li v-for="(item,index) in menuList " :key="index">
+                <!-- 分类title -->
+                <header class="menu_detail_header">
+                  <section class="menu_detail_header_left">
+                    <strong class="menu_item_title">{{item.name}}</strong>
+                    <span class="menu_item_description">{{item.description}}</span>
+                  </section>
+                  <span class="menu_detail_header_right" @click="showTitleDetail(index)"></span>
+                  <p class="description_tip" v-if="index == TitleDetailIndex">
+                    <span>{{item.name}}</span> {{item.description}}
+                  </p>
+                </header>
+                <section v-for="(foods,foodindex) in item.foods" :key="foodindex" class="menu_detail_list">
+                  <router-link :to="{path: 'shop/foodDetail', query:{image_path:foods.image_path, description: foods.description, month_sales: foods.month_sales, name: foods.name, rating: foods.rating, rating_count: foods.rating_count, satisfy_rate: foods.satisfy_rate, foods, shopId}}" tag="div" class="menu_detail_link">
+                    <section class="menu_food_img">
+                      <img :src="imgBaseUrl + foods.image_path">
+                    </section>
+                    <section class="menu_food_description">
+                      <h3 class="food_description_head">
+                        <strong class="description_foodname">{{foods.name}}</strong>
+                        <ul v-if="foods.attributes.length" class="attributes_ul">
+                          <li v-for="(attribute, foodindex) in foods.attributes" :key="foodindex" :style="{color: '#' + attribute.icon_color,borderColor:'#' +attribute.icon_color}" :class="{attribute_new: attribute.icon_name == '新'}">
+                            <p :style="{color: attribute.icon_name == '新'? '#fff' : '#' + attribute.icon_color}">{{attribute.icon_name == '新'? '新品':attribute.icon_name}}</p>
+                          </li>
+                        </ul>
+                      </h3>
+                      <p class="food_description_content">{{foods.description}}</p>
+                      <p class="food_description_sale_rating">
+                        <span>月售{{foods.month_sales}}份</span>
+                        <span>好评率{{foods.satisfy_rate}}%</span>
+                      </p>
+                      <p v-if="foods.activity" class="food_activity">
+                        <span :style="{color: '#' + foods.activity.image_text_color,borderColor:'#' +foods.activity.icon_color}">{{foods.activity.image_text}}</span>
+                      </p>
+                    </section>
+                  </router-link>
+                  <footer class="menu_detail_footer">
+                    <section class="food_price">
+                      <span>¥</span>
+                      <span>{{foods.specfoods[0].price}}</span>
+                      <span v-if="foods.specifications.length">起</span>
+                    </section>
+                   <!--  <buy-cart :shopId='shopId' :foods='foods' @moveInCart="listenInCart" @showChooseList="showChooseList" @showReduceTip="showReduceTip" @showMoveDot="showMoveDotFun"></buy-cart> -->
+                  </footer>
+                </section>
+              </li>
+            </ul>
+          </section>
+        </section>
+      </section>
     </section>
     <loading v-show="showLoading"></loading>
   </div>
@@ -18,35 +108,45 @@
 <script>
 import { mapState, mapMutations } from 'vuex'
 import loading from '@/components/common/loading'
+import { loadMore, getImgPath } from '@/components/common/mixin'
 
 export default {
   data() {
     return {
       imgBaseUrl: '//elm.cangdu.org/img/', //图片所在域名地址
       geohash: '', //geohash位置信息
-      shopId: null, //商店id值
-      shopDetailData: null, //商铺详情
+      shopId: '', //商店id值
+      shopDetailData: '', //商铺详情
       showLoading: true, //显示加载动画
+      showActivities: false, //是否显示活动详情
+      changeShowType: 'food', //切换显示商品或者评价
+      menuList: [], //食品列表
+      TitleDetailIndex: null, //点击展示列表头部详情
     }
   },
   computed: {
     ...mapState([
       'latitude', 'longitude'
-    ])
+    ]),
+    promotionInfo: function() {
+      return this.shopDetailData.promotion_info || '欢迎光临，用餐高峰期请提前下单，谢谢。'
+    },
   },
   created() {
     this.geohash = this.$route.query.geohash;
     this.shopId = this.$route.query.id;
-  },
-  mounted() {
     this.initData(); //初始化
   },
+  mounted() {
+
+  },
+  mixins: [loadMore, getImgPath],
   methods: {
     ...mapMutations([
       'RECORD_ADDRESS'
     ]),
     //初始化时获取基本数据
-    async initData() {
+    initData() {
       this.$http.all([this.getMsiteAddress(), this.getShopDetailData(), this.getMenuList()])
         .then(this.$http.spread((res1, res2, res3) => {
           // 1、获取位置信息
@@ -56,10 +156,11 @@ export default {
           }
           // 2、获取商铺信息
           this.shopDetailData = res2.data;
-          console.log(this.shopDetailData)
+          // console.log(this.shopDetailData)
 
           // 3、获取商铺食品列表
-          // console.log(res3.data)
+          this.menuList = res3.data;
+          console.log(res3.data)
           // 隐藏加载动画
           this.hideLoading();
         }))
@@ -89,12 +190,32 @@ export default {
         // }
       })
     },
+    //控制活动详情页的显示隐藏
+    showActivitiesFun() {
+      this.showActivities = !this.showActivities;
+    },
+    showTitleDetail(index) {
+      if (this.TitleDetailIndex == index) {
+        this.TitleDetailIndex = null;
+      } else {
+        this.TitleDetailIndex = index;
+      }
+    },
     //隐藏加载动画
     hideLoading() {
       this.showLoading = false;
     },
     goback() {
       this.$router.go(-1)
+    }
+  },
+  watch: {
+    // 商品、评论切换状态
+    changeShowType: function(val) {
+      console.log(val)
+      if (val == 'rating') {
+
+      }
     }
   },
   components: {
