@@ -39,16 +39,16 @@
       <section v-show="changeShowType =='food'" class="food_container">
         <!-- 菜单列表 -->
         <section class="menu_container">
-          <section class="menu_left">
+          <section class="menu_left" id="wrapper_menu" ref="wrapperMenu">
             <ul>
-              <li v-for="(item,index) in menuList" :key="index" class="menu_left_li">
+              <li v-for="(item,index) in menuList" :key="index" class="menu_left_li" :class="{activity_menu: index == menuIndex}" @click="chooseMenu(index)">
                 <img :src="getImgPath(item.icon_url)" v-if="item.icon_url">
                 <span>{{item.name}}</span>
                 <span class="category_num">1</span>
               </li>
             </ul>
           </section>
-          <section class="menu_right">
+          <section class="menu_right" ref="menuFoodList">
             <ul>
               <!-- 对应菜单左侧每个分类 -->
               <li v-for="(item,index) in menuList " :key="index">
@@ -93,7 +93,7 @@
                       <span>{{foods.specfoods[0].price}}</span>
                       <span v-if="foods.specifications.length">起</span>
                     </section>
-                   <!--  <buy-cart :shopId='shopId' :foods='foods' @moveInCart="listenInCart" @showChooseList="showChooseList" @showReduceTip="showReduceTip" @showMoveDot="showMoveDotFun"></buy-cart> -->
+                    <buy-cart :shopId='shopId' :foods='foods'></buy-cart>
                   </footer>
                 </section>
               </li>
@@ -108,7 +108,9 @@
 <script>
 import { mapState, mapMutations } from 'vuex'
 import loading from '@/components/common/loading'
+import buyCart from '@/components/common/buyCart'
 import { loadMore, getImgPath } from '@/components/common/mixin'
+import BScroll from 'better-scroll'
 
 export default {
   data() {
@@ -122,6 +124,10 @@ export default {
       changeShowType: 'food', //切换显示商品或者评价
       menuList: [], //食品列表
       TitleDetailIndex: null, //点击展示列表头部详情
+      shopListTop: [], //商品列表的高度集合
+      menuIndex: 0, //已选菜单索引值，默认为0
+      menuIndexChange: true, //解决选中index时，scroll监听事件重复判断设置index的bug
+      foodScroll: null, //食品列表scroll
     }
   },
   computed: {
@@ -190,6 +196,55 @@ export default {
         // }
       })
     },
+    // 点击左侧食品列表，相应列表移动到最顶层
+    chooseMenu(index) {
+      this.menuIndex = index;
+      //menuIndexChange解决运动时listenScroll依然监听的bug
+      this.menuIndexChange = false;
+      this.foodScroll.scrollTo(0, -this.shopListTop[index], 400);
+      this.foodScroll.on('scrollEnd', () => {
+        this.menuIndexChange = true;
+      })
+    },
+    //获取食品列表的高度，存入shopListTop
+    getFoodListHeight() {
+      const listContainer = this.$refs.menuFoodList;
+      // Array.from() 方法从一个类似数组或可迭代对象中创建一个新的数组实例
+      const listArr = Array.from(listContainer.children[0].children);
+      listArr.forEach((item, index) => {
+        this.shopListTop[index] = item.offsetTop;
+      });
+      this.listenScroll(listContainer)
+    },
+    //当滑动食品列表时，监听其scrollTop值来设置对应的食品列表标题的样式
+    listenScroll(element) {
+      this.foodScroll = new BScroll(element, {
+        probeType: 3,
+        deceleration: 0.001,
+        bounce: false,
+        swipeTime: 2000,
+        click: true,
+      });
+
+      const wrapperMenu = new BScroll('#wrapper_menu', {
+        click: true,
+      });
+
+      const wrapMenuHeight = this.$refs.wrapperMenu.clientHeight;
+      this.foodScroll.on('scroll', (pos) => {
+        if (!this.$refs.wrapperMenu) {
+          return
+        }
+        this.shopListTop.forEach((item, index) => {
+          if (this.menuIndexChange && Math.abs(Math.round(pos.y)) >= item) {
+            this.menuIndex = index;
+            const menuList = this.$refs.wrapperMenu.querySelectorAll('.activity_menu');
+            const el = menuList[0];
+            wrapperMenu.scrollToElement(el, 800, 0, -(wrapMenuHeight / 2 - 50));
+          }
+        })
+      })
+    },
     //控制活动详情页的显示隐藏
     showActivitiesFun() {
       this.showActivities = !this.showActivities;
@@ -210,16 +265,24 @@ export default {
     }
   },
   watch: {
+    //showLoading变化时说明组件已经获取初始化数据，在下一帧nextTick进行后续操作
+    showLoading: function(val) {
+      if (!val) {
+        this.$nextTick(() => {
+          this.getFoodListHeight(); //获取食品列表的高度，存入shopListTop
+        })
+      }
+    },
     // 商品、评论切换状态
     changeShowType: function(val) {
-      console.log(val)
       if (val == 'rating') {
 
       }
     }
   },
   components: {
-    loading
+    loading,
+    buyCart
   }
 }
 
