@@ -1,10 +1,25 @@
 <template>
-  <section>
+  <section class="cart_module">
+    <span class="cart_num">0</span>
+    <!-- 无规格的 -->
+    <section v-if="!foods.specifications.length" class="cart_button">
+      <svg class="add_icon" @touchstart="addToCart(foods.category_id, foods.item_id, foods.specfoods[0].food_id, foods.specfoods[0].name, foods.specfoods[0].price, '', foods.specfoods[0].packing_fee, foods.specfoods[0].sku_id, foods.specfoods[0].stock, $event)">
+        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#cart-add"></use>
+      </svg>
+    </section>
+    <!-- 有规格的 -->
+    <section v-if="" class="choose_specification">
+    </section>
   </section>
 </template>
 <script>
 export default {
-    
+  props: ['shopId', 'foods'],
+  methods:{
+    addToCart(category_id, item_id, food_id, name, price, specs, packing_fee, sku_id, stock, event){
+      
+    }
+  }
 }
 
 </script>
