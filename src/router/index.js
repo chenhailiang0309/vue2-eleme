@@ -4,6 +4,7 @@ const home = r => require.ensure([], () => r(require('../page/home/home')), 'hom
 const city = r => require.ensure([], () => r(require('../page/city/city')), 'city')
 const msite = r => require.ensure([], () => r(require('../page/msite/msite')), 'msite')
 const shop = r => require.ensure([], () => r(require('../page/shop/shop')), 'shop')
+const food = r => require.ensure([], () => r(require('../page/food/food')), 'food')
 
 Vue.use(Router)
 
@@ -14,7 +15,8 @@ export default new Router({
     { path: '/home', name: 'home', component: home },
     { path: '/city/:cityid', name: 'city', component: city },
     { path: '/msite', name: 'msite', component: msite },
-    { path: '/shop', name: 'shop', component: shop }
+    { path: '/shop', name: 'shop', component: shop },
+    { path: '/food', name: 'food', component: food },
   ],
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {

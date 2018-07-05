@@ -11,10 +11,10 @@
       </div>
       <router-link :to="'/city/' + guessCityid" class="guess_city">
         <span>{{guessCity}}</span>
-        <span class="arrow_right">></span>
-        <!-- <svg class="arrow_right">
-            <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#arrow-right"></use>
-          </svg> -->
+        <svg class="arrow_right">
+          <!-- <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#arrow-right"></use> -->
+          <use xmlns:xlink="../../images/row_right.svg" xlink:href="#arrow-right"></use>
+        </svg>
       </router-link>
     </nav>
     <!-- 热门城市 -->
@@ -114,7 +114,7 @@ export default {
       const res = await req.get('/v1/cities?type=guess',params)
       console.log(res)
     },*/
-    
+
     //点击图标刷新页面
     reload() {
       window.location.reload();
