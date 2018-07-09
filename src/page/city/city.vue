@@ -10,7 +10,7 @@
         <input type="search" name="city" placeholder="输入学校、商务楼、地址" class="city_input input_style" required v-model="inputValue">
       </div>
       <div>
-        <input type="submit" name="submit" class="city_submit input_style" value="提交" @click="postposi">
+        <input type="submit" name="submit" class="city_submit input_style" value="提交" @keydown.enter="postposi" @click="postposi">
       </div>
     </form>
     <!-- 搜索历史 标题 -->
