@@ -100,9 +100,37 @@
             </ul>
           </section>
         </section>
+        <!-- 购物车 -->
+        <section class="buy_cart_container">
+          <section class="cart_icon_num">
+            <div class="cart_icon_container" :class="{cart_icon_activity: totalPrice > 0, move_in_cart:receiveInCart}" ref="cartContainer">
+              <span v-if="totalNum" class="cart_list_length">
+                {{totalNum}}
+              </span>
+              <svg class="cart_icon">
+                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#cart-icon"></use>
+              </svg>
+            </div>
+            <div class="cart_num">
+              <div>￥{{totalPrice}}</div>
+              <div>配送费￥{{deliveryFee}}</div>
+            </div>
+          </section>
+          <section class="gotopay" :class="{gotopay_acitvity:minimumOrderAmount <=0}">
+            <span class="gotopay_button_style" v-if="minimumOrderAmount>0">还差￥{{minimumOrderAmount}}起送</span>
+            <router-link :to="{path:'/confirmOrder',query:{geohash,shopId}}" class="gotopay_button_style" v-else>去结算</router-link>
+          </section>
+        </section>
       </section>
     </section>
     <loading v-show="showLoading"></loading>
+    <transition>
+      <span class="move_dot">
+        <svg class="move_liner">
+          <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#cart-add"></use>
+        </svg>
+      </span>
+    </transition>
   </div>
 </template>
 <script>
@@ -128,15 +156,46 @@ export default {
       menuIndex: 0, //已选菜单索引值，默认为0
       menuIndexChange: true, //解决选中index时，scroll监听事件重复判断设置index的bug
       foodScroll: null, //食品列表scroll
+      totalPrice: 0, //总共价格
+      cartFoodList: [], //购物车商品列表
+      receiveInCart: false, //购物车组件下落的圆点是否到达目标位置
     }
   },
   computed: {
     ...mapState([
-      'latitude', 'longitude'
+      'latitude', 'longitude', 'cartList'
     ]),
     promotionInfo: function() {
       return this.shopDetailData.promotion_info || '欢迎光临，用餐高峰期请提前下单，谢谢。'
     },
+    // 配送费
+    deliveryFee() {
+      if (this.shopDetailData) {
+        return this.shopDetailData.float_delivery_fee;
+      } else {
+        return null;
+      }
+    },
+    // 还差多少元起送，为负数时显示去结算按钮
+    minimumOrderAmount() {
+      if (this.shopDetailData) {
+        return this.shopDetailData.float_minimum_order_amount - this.totalPrice;
+      } else {
+        return null;
+      }
+    },
+    // 当前商店购物信息
+    shopCart() {
+      return { ...this.cartList[this.shopId] };
+    },
+    // 购物车中总共商品的数量
+    totalNum() {
+      let num = 0
+      this.cartFoodList.forEach(item => {
+        num += item.num
+      })
+      return num
+    }
   },
   created() {
     this.geohash = this.$route.query.geohash;
@@ -149,7 +208,7 @@ export default {
   mixins: [loadMore, getImgPath],
   methods: {
     ...mapMutations([
-      'RECORD_ADDRESS'
+      'RECORD_ADDRESS', 'ADD_CART'
     ]),
     //初始化时获取基本数据
     initData() {
@@ -199,7 +258,7 @@ export default {
     // 点击左侧食品列表，相应列表移动到最顶层
     chooseMenu(index) {
       this.menuIndex = index;
-      //menuIndexChange解决运动时listenScroll依然监听的bug
+      //menuIndexChange 解决运动时listenScroll依然监听的bug
       this.menuIndexChange = false;
       this.foodScroll.scrollTo(0, -this.shopListTop[index], 400);
       this.foodScroll.on('scrollEnd', () => {
@@ -256,6 +315,57 @@ export default {
         this.TitleDetailIndex = index;
       }
     },
+    /**
+     * 初始化和shopCart变化时，重新获取购物车改变过的数据，赋值 categoryNum，totalPrice，cartFoodList，整个数据流是自上而下的形式，所有的购物车数据都交给vuex统一管理，包括购物车组件中自身的商品数量，使整个数据流更加清晰
+     */
+    initCategoryNum() {
+      let newArr = [];
+      let cartFoodNum = 0;
+      this.totalPrice = 0;
+      this.cartFoodList = [];
+      this.menuList.forEach((item, index) => {
+        if (this.shopCart && this.shopCart[item.foods[0].category_id]) {
+          let num = 0;
+          Object.keys(this.shopCart[item.foods[0].category_id]).forEach(itemid => {
+            Object.keys(this.shopCart[item.foods[0].category_id][itemid]).forEach(foodid => {
+              let foodItem = this.shopCart[item.foods[0].category_id][itemid][foodid];
+              num += foodItem.num;
+              if (item.type == 1) {
+                this.totalPrice += foodItem.num * foodItem.price;
+                if (foodItem.num > 0) {
+                  this.cartFoodList[cartFoodNum] = {};
+                  this.cartFoodList[cartFoodNum].category_id = item.foods[0].category_id;
+                  this.cartFoodList[cartFoodNum].item_id = itemid;
+                  this.cartFoodList[cartFoodNum].food_id = foodid;
+                  this.cartFoodList[cartFoodNum].num = foodItem.num;
+                  this.cartFoodList[cartFoodNum].price = foodItem.price;
+                  this.cartFoodList[cartFoodNum].name = foodItem.name;
+                  this.cartFoodList[cartFoodNum].specs = foodItem.specs;
+                  cartFoodNum++;
+                }
+              }
+            })
+          })
+          newArr[index] = num;
+        } else {
+          newArr[index] = 0;
+        }
+      })
+      this.totalPrice = this.totalPrice.toFixed(2);
+      this.categoryNum = [...newArr];
+    },
+    //监听圆点是否进入购物车
+    listenInCart() {
+      if (!this.receiveInCart) {
+        this.receiveInCart = true;
+        this.$refs.cartContainer.addEventListener('animationend', () => {
+          this.receiveInCart = false;
+        })
+        this.$refs.cartContainer.addEventListener('webkitAnimationEnd', () => {
+          this.receiveInCart = false;
+        })
+      }
+    },
     //隐藏加载动画
     hideLoading() {
       this.showLoading = false;
@@ -270,8 +380,12 @@ export default {
       if (!val) {
         this.$nextTick(() => {
           this.getFoodListHeight(); //获取食品列表的高度，存入shopListTop
+          this.initCategoryNum();
         })
       }
+    },
+    shopCart: function(value) {
+      this.initCategoryNum();
     },
     // 商品、评论切换状态
     changeShowType: function(val) {
